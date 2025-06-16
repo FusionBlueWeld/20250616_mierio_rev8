@@ -1,0 +1,51 @@
+{
+    "timestamp": "2025-06-16T23:02:21.331078",
+    "model_name": "",
+    "feature_csv_path": "C:\\Users\\tsuts\\Desktop\\PythonDev_std\\20250616_mierio_rev8\\mierio\\user_data\\uploads\\Feature.csv",
+    "target_csv_path": "C:\\Users\\tsuts\\Desktop\\PythonDev_std\\20250616_mierio_rev8\\mierio\\user_data\\uploads\\Target.csv",
+    "fitting_method": "線形結合",
+    "fitting_config": {
+        "Z_depth": {
+            "X1_speed": "Exp_Decay",
+            "X2_height": "Gaussian",
+            "X3_power": "Power_Law"
+        },
+        "Z_width": {
+            "X1_speed": "Linear",
+            "X2_height": "Polynomial_2nd",
+            "X3_power": "Log_Growth"
+        }
+    },
+    "functions": [
+        {
+            "name": "Exp_Decay",
+            "equation": "A * exp(-x / tau) + C",
+            "parameters": "A=1.0, tau=100.0, C=0.5"
+        },
+        {
+            "name": "Gaussian",
+            "equation": "Amp * exp(-(x - mu)**2 / (2 * sigma**2))",
+            "parameters": "Amp=1.0, mu=0.0, sigma=1.0"
+        },
+        {
+            "name": "Power_Law",
+            "equation": "alpha * x**beta",
+            "parameters": "alpha=1.0, beta=0.7"
+        },
+        {
+            "name": "Linear",
+            "equation": "m * x + b",
+            "parameters": "m=0.1, b=0.0"
+        },
+        {
+            "name": "Polynomial_2nd",
+            "equation": "a * x**2 + b * x + c",
+            "parameters": "a=0.01, b=0.1, c=0.0"
+        },
+        {
+            "name": "Log_Growth",
+            "equation": "K / (1 + exp(-r * (x - x0)))",
+            "parameters": "K=1.0, r=0.1, x0=0.0"
+        }
+    ]
+}
