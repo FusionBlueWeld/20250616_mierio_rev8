@@ -165,34 +165,10 @@ def load_model_config():
                 current_app.logger.info(f"    └─ Substituted: {substituted_str}")
         current_app.logger.info("------------------------------------\n")
 
-        # --- numexprを使った計算デモを追加 ---
-        try:
-            df_feature = pd.read_csv(current_feature_filepath)
-            if not df_feature.empty:
-                first_row_values = df_feature.iloc[0].to_dict()
-                
-                feature_values_for_calc = {
-                    k: v for k, v in first_row_values.items() 
-                    if k in feature_headers_session
-                }
-                
-                calculated_results = calculate_targets(loaded_data, feature_values_for_calc)
-
-                current_app.logger.info("\n--- Calculation Demo with numexpr (using first row of features) ---")
-                current_app.logger.info(f"Input Features: {feature_values_for_calc}")
-                current_app.logger.info(f"Calculated Targets: {calculated_results}")
-                
-                df_target = pd.read_csv(current_target_filepath)
-                if not df_target.empty and 'main_id' in df_target.columns and 'main_id' in first_row_values:
-                    main_id = first_row_values['main_id']
-                    actual_targets = df_target[df_target['main_id'] == main_id]
-                    if not actual_targets.empty:
-                         current_app.logger.info(f"Actual Targets: {actual_targets.iloc[0].to_dict()}")
-
-                current_app.logger.info("---------------------------------------------------------------------\n")
-        except Exception as e:
-            current_app.logger.error(f"Error during calculation demo: {e}", exc_info=True)
-        # --- 追加ここまで ---
+        session['calculation_demo_data'] = {
+            'loaded_data': loaded_data,
+            'current_feature_filepath': current_feature_filepath
+        }
 
         return jsonify({
             'message': 'Configuration loaded successfully.',
@@ -207,3 +183,63 @@ def load_model_config():
     except Exception as e:
         current_app.logger.error(f"Error loading model config: {e}", exc_info=True)
         return jsonify({'error': f'Failed to load model configuration: {str(e)}'}), 500
+
+
+@model_bp.route('/calculate_demo', methods=['POST'])
+def calculate_demo_route():
+    if 'calculation_demo_data' not in session:
+        return jsonify({'error': 'Model data not loaded or session expired. Please load a model config first.'}), 400
+
+    demo_data = session['calculation_demo_data']
+    loaded_data = demo_data['loaded_data']
+    current_feature_filepath = demo_data['current_feature_filepath']
+
+    # Retrieve feature_headers from session, needed by calculate_targets (indirectly)
+    # or ensure it's part of loaded_data if it's always available there.
+    # For now, let's assume feature_headers are part of what calculate_targets expects or can derive.
+    # If calculate_targets strictly needs feature_headers from the session, it should be added to 'calculation_demo_data'.
+    # Based on the provided code, feature_headers are read from session within load_model_config
+    # but calculate_targets itself takes loaded_data (which contains functions and fitting_config)
+    # and feature_values_for_calc (a dict of feature values).
+
+    feature_headers_session = session.get('feature_headers', []) # Get feature_headers from session
+
+    try:
+        df_feature = pd.read_csv(current_feature_filepath)
+        if df_feature.empty:
+            current_app.logger.info("Calculation Demo: Feature data is empty.")
+            return jsonify({'message': 'Calculation Demo: Feature data is empty.'}), 200
+
+        first_row_values = df_feature.iloc[0].to_dict()
+
+        # Filter first_row_values to include only those in feature_headers_session
+        # This mimics the filtering done in the original load_model_config
+        feature_values_for_calc = {
+            k: v for k, v in first_row_values.items()
+            if k in feature_headers_session
+        }
+
+        calculated_results = calculate_targets(loaded_data, feature_values_for_calc)
+
+        current_app.logger.info("\n--- Calculation Demo with numexpr (triggered by overlap toggle) ---")
+        current_app.logger.info(f"Input Features: {feature_values_for_calc}")
+        current_app.logger.info(f"Calculated Targets: {calculated_results}")
+
+        # Attempt to log actual targets if available
+        current_target_filepath = session.get('target_filepath')
+        if current_target_filepath:
+            df_target = pd.read_csv(current_target_filepath)
+            if not df_target.empty and 'main_id' in df_target.columns and 'main_id' in first_row_values:
+                main_id_value = first_row_values['main_id'] # Renamed to avoid conflict
+                actual_targets_df = df_target[df_target['main_id'] == main_id_value] # Renamed to avoid conflict
+                if not actual_targets_df.empty:
+                     current_app.logger.info(f"Actual Targets: {actual_targets_df.iloc[0].to_dict()}")
+
+        current_app.logger.info("---------------------------------------------------------------------\n")
+        return jsonify({'message': 'Calculation demo executed and logged successfully.'}), 200
+    except FileNotFoundError:
+        current_app.logger.error(f"Error during calculation demo: File not found - {current_feature_filepath}")
+        return jsonify({'error': f'Calculation Demo: Feature file not found - {current_feature_filepath}'}), 400
+    except Exception as e:
+        current_app.logger.error(f"Error during calculation demo: {e}", exc_info=True)
+        return jsonify({'error': f'An unexpected error occurred during calculation: {str(e)}'}), 500

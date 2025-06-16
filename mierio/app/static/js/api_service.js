@@ -104,5 +104,26 @@ const APIService = {
             console.error('Error in loadModelConfig:', error);
             throw new Error(`モデル設定ロード中にエラーが発生しました: ${error.message}`);
         }
+    },
+
+    /**
+     * Triggers the calculation demo on the backend.
+     * @returns {Promise<Object>} - Server response.
+     */
+    triggerCalculationDemo: async () => {
+        try {
+            const response = await fetch('/calculate_demo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // No body is needed as the server will use session data
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error in triggerCalculationDemo:', error);
+            // Potentially show a user-facing error, but for now, just log and re-throw
+            throw new Error(`計算デモの実行中にエラーが発生しました: ${error.message}`);
+        }
     }
 };

@@ -57,11 +57,37 @@ const ViewTab = {
         });
 
         // OVERLAPスイッチの動作制御
-        document.getElementById('overlap-toggle').addEventListener('change', () => {
+        document.getElementById('overlap-toggle').addEventListener('change', async () => { // Added async here
             const isOverlapEnabled = document.getElementById('overlap-toggle').checked;
-            // model_tab.jsからmodelConfigLoadedフラグを取得する想定
-            const isModelConfigLoaded = window.modelConfigLoaded; // script.jsを介してグローバルにアクセス
+            const isModelConfigLoaded = window.modelConfigLoaded;
             UIHandlers.updateViewActionButtons(isOverlapEnabled, isModelConfigLoaded);
+
+            if (isOverlapEnabled) {
+                // Only trigger if a model is also loaded
+                if (isModelConfigLoaded) {
+                    try {
+                        console.log('Overlap ON, triggering calculation demo...');
+                        const result = await APIService.triggerCalculationDemo();
+                        if (result.error) {
+                            console.error('Calculation demo trigger failed:', result.error);
+                            // Optionally, inform the user via an alert or UI message
+                            // alert(`Calculation demo failed: ${result.error}`);
+                        } else {
+                            console.log('Calculation demo triggered successfully:', result.message);
+                            // Optionally, inform the user
+                            // alert(result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error calling triggerCalculationDemo:', error);
+                        // Optionally, inform the user
+                        // alert(`Error triggering calculation demo: ${error.message}`);
+                    }
+                } else {
+                    console.log('Overlap ON, but no model loaded. Calculation demo not triggered.');
+                    // Optionally, inform the user that they need to load a model first
+                    // alert('Please load a model before enabling overlap calculation.');
+                }
+            }
         });
     },
 
